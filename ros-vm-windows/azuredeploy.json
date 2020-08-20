@@ -58,7 +58,7 @@
             "metadata": {
                 "description": "The base URI where artifacts required by this template are located including a trailing '/'"
             },
-            "defaultValue": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/ros-vm-windows/"
+            "defaultValue": "https://raw.githubusercontent.com/judyanndixon/azure-quickstart-templates/seas/ros-vm-windows/"
         },
         "_artifactsLocationSasToken": {
             "type": "securestring",
