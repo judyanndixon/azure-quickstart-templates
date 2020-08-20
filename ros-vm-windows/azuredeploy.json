@@ -53,60 +53,6 @@
                 "description": "Password for the Virtual Machine."
             }
         },
-        "pipelineProvider": {
-            "type": "string",
-            "defaultValue": "None",
-            "allowedValues": [
-                "None",
-                "AzurePipelines",
-                "GitHubRunner"
-            ],
-            "metadata": {
-                "description": "The continuous integration provider to register."
-            }
-        },
-        "vstsAccount": {
-            "type": "string",
-            "metadata": {
-                "description": "The Visual Studio Team Services account name, that is, the first part of your VSTSAccount.visualstudio.com"
-            },
-            "defaultValue": ""
-        },
-        "vstsPersonalAccessToken": {
-            "type": "securestring",
-            "metadata": {
-                "description": "The personal access token to connect to VSTS"
-            },
-            "defaultValue": ""
-        },
-        "vstsPoolName": {
-            "type": "string",
-            "defaultValue": "Default",
-            "metadata": {
-                "description": "The Visual Studio Team Services build agent pool for this build agent to join. Use 'Default' if you don't have a separate pool."
-            }
-        },
-        "enableAutologon": {
-            "type": "bool",
-            "defaultValue": false,
-            "metadata": {
-              "description": "Enable autologon to run the build agent in interactive mode that can sustain machine reboots.<br>Set this to true if the agents will be used to run UI tests."
-            }
-        },
-        "githubRepo": {
-            "type": "string",
-            "metadata": {
-                "description": "The github account and repo alias."
-            },
-            "defaultValue": ""
-        },
-        "githubPersonalAccessToken": {
-            "type": "securestring",
-            "metadata": {
-                "description": "The personal access token to connect to GitHub."
-            },
-            "defaultValue": ""
-        },
         "_artifactsLocation": {
             "type": "string",
             "metadata": {
@@ -190,12 +136,7 @@
             }
         },
         "osDiskType": "StandardSSD_LRS",
-        "vstsScriptFileUri": "[uri(parameters('_artifactsLocation'), concat('InstallVstsAgent.ps1', parameters('_artifactsLocationSasToken')))]",
-        "githubScriptFileUri": "[uri(parameters('_artifactsLocation'), concat('InstallGitHubAgent.ps1', parameters('_artifactsLocationSasToken')))]",
-        "nvidiaGpuDriverWindowsUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/nvidiaGpuDriverWindows.json', parameters('_artifactsLocationSasToken')))]",
-        "extensionUrl": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/customScriptExtension.json', parameters('_artifactsLocationSasToken')))]",
-        "vstsParameters": "[concat('-vstsAccount ', parameters('vstsAccount'), ' -personalAccessToken ', parameters('vstsPersonalAccessToken'), ' -AgentName ', concat(parameters('projectName'), '-vsts'),' -PoolName ', parameters('vstsPoolName'), ' -runAsAutoLogon ', parameters('enableAutologon'), ' -vmAdminUserName ', parameters('adminUsername'), ' -vmAdminPassword ', parameters('adminPassword'))]",
-        "githubParameters": "[concat('-GitHubRepo ', parameters('githubRepo'), ' -GitHubPAT ', parameters('githubPersonalAccessToken'), ' -AgentName ', concat(parameters('projectName'), '-github'))]"
+        "nvidiaGpuDriverWindowsUri": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/nvidiaGpuDriverWindows.json', parameters('_artifactsLocationSasToken')))]"
     },
     "resources": [
         {
@@ -320,73 +261,12 @@
             }
         },
         {
-            "condition": "[contains(parameters('pipelineProvider'), 'AzurePipelines')]",
-            "name": "[concat(variables('virtualMachineName'), '-VSTSAgentInstall')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('extensionUrl')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "location": {
-                        "value": "[variables('location')]"
-                    },
-                    "extensionName": {
-                        "value": "cse"
-                    },
-                    "vmName": {
-                        "value": "[variables('virtualMachineName')]"
-                    },
-                    "fileUris": {
-                        "value": [
-                            "[variables('vstsScriptFileUri')]"
-                        ]
-                    },
-                    "commandToExecute": {
-                        "value": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"& {', './', 'InstallVstsAgent.ps1', ' ', variables('vstsParameters'), '}\"')]"
-                    }
-                }
-            }
-        },
-        {
-            "condition": "[contains(parameters('pipelineProvider'), 'GitHubRunner')]",
-            "name": "[concat(variables('virtualMachineName'), '-GitHubAgentInstall')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('extensionUrl')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "location": {
-                        "value": "[variables('location')]"
-                    },
-                    "extensionName": {
-                        "value": "cse"
-                    },
-                    "vmName": {
-                        "value": "[variables('virtualMachineName')]"
-                    },
-                    "fileUris": {
-                        "value": [
-                            "[variables('githubScriptFileUri')]"
-                        ]
-                    },
-                    "commandToExecute": {
-                        "value": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command \"& {', './', 'InstallGitHubAgent.ps1', ' ', variables('githubParameters'), '}\"')]"
-                    }
-                }
-            }
-        },
-        {
             "condition": "[contains(parameters('virtualMachineSize'), 'Standard_NV')]",
             "name": "nvidia-gpu-driver-windows",
             "apiVersion": "2019-05-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines/', variables('virtualMachineName'))]"
+            ],
             "type": "Microsoft.Resources/deployments",
             "properties": {
                 "mode": "Incremental",
